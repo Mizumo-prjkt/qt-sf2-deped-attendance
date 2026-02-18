@@ -1,0 +1,8 @@
+venv
+.~lock.output.xlsx#
+lib/__pycache__/composer_tui.cpython-313.pyc
+.gitignore
+sf2-template/.~lock.SF2Template.xlsx#
+lib/__pycache__/tui.cpython-313.pyc
+lib/__pycache__/processor.cpython-313.pyc
+lib/__pycache__/parser.cpython-313.pyc
