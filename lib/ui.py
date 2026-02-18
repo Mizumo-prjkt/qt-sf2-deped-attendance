@@ -22,9 +22,14 @@ class MainWindow(QMainWindow):
         top_layout = QHBoxLayout()
         self.btn_load = QPushButton("Load File")
         self.btn_load.clicked.connect(self.load_file)
+        
+        self.btn_compose = QPushButton("Compose Report")
+        self.btn_compose.clicked.connect(self.launch_composer)
+        
         self.lbl_status = QLabel("Ready")
         
         top_layout.addWidget(self.btn_load)
+        top_layout.addWidget(self.btn_compose)
         top_layout.addWidget(self.lbl_status)
         top_layout.addStretch()
         
@@ -41,6 +46,14 @@ class MainWindow(QMainWindow):
         
         if file_name:
             self.process_file(file_name)
+
+    def launch_composer(self):
+        try:
+            from . import composer_gui
+            # We keep a reference to the window to prevent garbage collection
+            self.composer_window = composer_gui.run_composer_gui()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to launch composer: {e}")
 
     def process_file(self, filepath):
         try:

@@ -131,6 +131,11 @@ class StudentScreen(Screen):
     def refresh_table(self):
         table = self.query_one(DataTable)
         table.clear()
+        
+        # Sort data before display
+        self.app.composer_data["students_male"].sort(key=lambda x: x["name"].lower())
+        self.app.composer_data["students_female"].sort(key=lambda x: x["name"].lower())
+        
         for s in self.app.composer_data["students_male"]:
             table.add_row(s["name"], "Male")
         for s in self.app.composer_data["students_female"]:
@@ -139,7 +144,7 @@ class StudentScreen(Screen):
 class AttendanceScreen(Screen):
     """Mark attendance."""
     
-    BINDINGS = [("space", "toggle_status", "Toggle P/A")]
+    BINDINGS = [("h", "toggle_holiday", "Toggle Holiday")]
     
     def compose(self) -> ComposeResult:
         yield Header()
@@ -161,18 +166,27 @@ class AttendanceScreen(Screen):
         
         dates = self.app.composer_data["dates"]
         
+        # Sort students before loading matrix too
+        self.app.composer_data["students_male"].sort(key=lambda x: x["name"].lower())
+        self.app.composer_data["students_female"].sort(key=lambda x: x["name"].lower())
+        
         # Build columns with Holiday indicators and Weekdays
         # dates are "YYYY-MM-DD"
         cols = ["Name"]
         for d in dates:
             dt = datetime.datetime.strptime(d, "%Y-%m-%d")
             day_str = dt.strftime("%d") # 05
-            day_name = dt.strftime("%a") # Mon
+            # Custom Day Name map
+            # M, T, W, TH, F
+            weekday = dt.weekday()
+            day_map = ["(M)", "(T)", "(W)", "(TH)", "(F)", "(S)", "(SU)"]
+            day_name = day_map[weekday]
             
-            label = f"{day_str}\n{day_name}"
+            # Single line label for better compatibility
+            label = f"{day_str} {day_name}"
             
             if d in self.app.composer_data["holidays"]:
-                label += "\n(H)"
+                label += " (H)"
             cols.append(label)
             
         table.add_columns(*cols)
@@ -285,6 +299,21 @@ class SaveComposerScreen(Screen):
         if event.button.id == "btn_confirm":
             fname = self.query_one("#filename").value
             if not fname: return
+            
+            # Sanitize: Replace spaces with underscores
+            fname = fname.strip().replace(" ", "_")
+            
+            # Ensure extension
+            if not fname.endswith(".xlsx"):
+                fname += ".xlsx"
+                
+            # Check for duplicates
+            if os.path.exists(fname):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                base, ext = os.path.splitext(fname)
+                fname = f"{base}_{timestamp}{ext}"
+                self.notify(f"File exists. Saving as {fname}", severity="warning")
+            
             try:
                 # Need absolute path to template
                 template = os.path.join(os.getcwd(), "sf2-template", "SF2Template.xlsx")

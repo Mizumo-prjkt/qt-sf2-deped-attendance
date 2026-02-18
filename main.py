@@ -13,11 +13,41 @@ def main():
     parser_args.add_argument("--parse-data", type=str, help="Path to file to parse", default=None)
     parser_args.add_argument("--terminal-only", action="store_true", help="Force terminal only mode")
     parser_args.add_argument("--autoyes", action="store_true", help="Skip confirmation prompts")
-    parser_args.add_argument("--composer", action="store_true", help="Launch SF2 Composer TUI")
+    parser_args.add_argument("--composer", action="store_true", help="Launch TUI Composer Mode directly")
+    parser_args.add_argument("--composer-gui", action="store_true", help="Launch GUI Composer Mode directly")
     
     args = parser_args.parse_args()
+    
+    # 2. Modes
+    if args.composer:
+        # Launch TUI Composer
+        from lib.composer_tui import run_composer
+        res = run_composer()
+        print(f"Composer exited with: {res}")
+        sys.exit(0)
 
-    # Terminal Only Mode
+    if args.composer_gui:
+        # Launch GUI Composer
+        try:
+            from PyQt6.QtWidgets import QApplication, QMessageBox
+            from lib.composer_gui import run_composer_gui
+            
+            # Check if we can connect to a display (rudimentary check for Linux)
+            if sys.platform.startswith('linux') and not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
+                 raise OSError("No display detected")
+
+            app = QApplication(sys.argv)
+            run_composer_gui()
+            sys.exit(app.exec())
+        except (ImportError, OSError) as e:
+            print(f"GUI Composer initialization failed ({e}). Falling back to terminal mode...")
+            # If GUI composer fails, maybe offer TUI composer or just exit?
+            # For now, just exit.
+            sys.exit(1)
+        except Exception as e:
+            print(f"An unexpected error occurred during GUI Composer launch: {e}")
+            sys.exit(1)
+
     if args.terminal_only:
         handle_terminal_mode(args)
         return
