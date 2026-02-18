@@ -423,6 +423,203 @@ class AttendanceMatrixWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
 
+
+class AttendanceMatrixWindow(QMainWindow):
+    def __init__(self, school_data, students_male, students_female):
+        super().__init__()
+        self.setWindowTitle("Step 3: Attendance Matrix")
+        self.resize(1000, 600)
+        
+        self.school_data = school_data
+        self.students_male = students_male
+        self.students_female = students_female
+        
+        # Calculate Dates
+        try:
+            self.dates = processor.get_weekdays_in_month(
+                school_data["school_year"], school_data["month"]
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Date Error", str(e))
+            self.dates = []
+
+        self.holidays = set()
+        
+        # UI
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        
+        # Info Header
+        info_label = QLabel(f"School: {school_data['school_name']} | Year: {school_data['school_year']} | Month: {school_data['month']}")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 5px;")
+        layout.addWidget(info_label)
+        
+        help_label = QLabel("Left Click Cell: Toggle Present/Absent | Click Header: Toggle Holiday (Red)")
+        help_label.setStyleSheet("color: gray;")
+        layout.addWidget(help_label)
+        
+        # Matrix Table
+        self.table = QTableWidget()
+        layout.addWidget(self.table)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        self.btn_save = QPushButton("Save to Excel")
+        self.btn_save.clicked.connect(self.save_file)
+        self.btn_save.setStyleSheet("background-color: #4CAF50; color: white; padding: 5px;")
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_save)
+        layout.addLayout(btn_layout)
+        
+        self.setup_table()
+        
+    def setup_table(self):
+        # Columns: Name + Dates
+        self.table.setColumnCount(1 + len(self.dates))
+        
+        headers = ["Name"]
+        for d in self.dates:
+            dt = datetime.datetime.strptime(d, "%Y-%m-%d")
+            day_str = dt.strftime("%d")
+            day_map = ["(M)", "(T)", "(W)", "(TH)", "(F)", "(S)", "(SU)"]
+            day_name = day_map[dt.weekday()]
+            headers.append(f"{day_str}\n{day_name}")
+            
+        self.table.setHorizontalHeaderLabels(headers)
+        self.table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
+        
+        # Rows
+        all_students = self.students_male + self.students_female
+        self.table.setRowCount(len(all_students))
+        
+        for i, s in enumerate(all_students):
+            # Name Item (Read Only)
+            name_item = QTableWidgetItem(s["name"])
+            name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(i, 0, name_item)
+            
+            # Date Cells
+            for j, d in enumerate(self.dates):
+                status = s.get("attendance", {}).get(d, "PRESENT")
+                text = "P" if status == "PRESENT" else "A"
+                if d in self.holidays:
+                    text = "" 
+                
+                item = QTableWidgetItem(text)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.setFlags(item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+                
+                self.update_cell_visuals(item, status, d in self.holidays)
+                self.table.setItem(i, j+1, item)
+                
+        self.table.cellClicked.connect(self.on_cell_clicked)
+
+    def update_cell_visuals(self, item, status, is_holiday):
+        if is_holiday:
+            item.setBackground(QColor("#FFCDD2")) # Light Red
+            item.setText("")
+        elif status == "ABSENT":
+            item.setBackground(QColor("#FFEBEE"))
+            item.setForeground(QColor("red"))
+            item.setText("A")
+        else:
+            item.setBackground(QColor("white"))
+            item.setForeground(QColor("black"))
+            item.setText("P")
+
+    def on_cell_clicked(self, row, col):
+        if col == 0: return
+        
+        date_str = self.dates[col-1]
+        
+        # If Holiday, maybe warn or allow toggle? 
+        if date_str in self.holidays:
+            QMessageBox.information(self, "Holiday", "This day is marked as a Holiday. Click the header to unmark it.")
+            return
+
+        all_students = self.students_male + self.students_female
+        student = all_students[row]
+        
+        current = student.get("attendance", {}).get(date_str, "PRESENT")
+        new_status = "ABSENT" if current == "PRESENT" else "PRESENT"
+        
+        # Update Data
+        if "attendance" not in student: student["attendance"] = {}
+        student["attendance"][date_str] = new_status
+        
+        # Update UI
+        item = self.table.item(row, col)
+        self.update_cell_visuals(item, new_status, False)
+
+    def on_header_clicked(self, idx):
+        if idx == 0: return
+        
+        date_str = self.dates[idx-1]
+        
+        if date_str in self.holidays:
+            self.holidays.remove(date_str)
+        else:
+            self.holidays.add(date_str)
+            
+        # Refresh Data Column
+        all_students = self.students_male + self.students_female
+        for i, s in enumerate(all_students):
+            item = self.table.item(i, idx)
+            status = s.get("attendance", {}).get(date_str, "PRESENT")
+            self.update_cell_visuals(item, status, date_str in self.holidays)
+
+    def save_file(self):
+        reply = QMessageBox.question(self, "Confirm Save", 
+                                   "Are you sure you want to save this attendance report?",
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        default_name = f"Attendance_{self.school_data['month']}_{self.school_data['section']}.xlsx"
+        default_name = default_name.replace(" ", "_")
+        
+        cwd = os.getcwd()
+        fpath, _ = QFileDialog.getSaveFileName(self, "Save Attendance Report", os.path.join(cwd, default_name), "Excel Files (*.xlsx)")
+        
+        if not fpath:
+            return
+            
+        dirname = os.path.dirname(fpath)
+        basename = os.path.basename(fpath)
+        basename = basename.replace(" ", "_")
+        final_path = os.path.join(dirname, basename)
+        
+        if os.path.exists(final_path):
+             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+             base, ext = os.path.splitext(basename)
+             basename = f"{base}_{timestamp}{ext}"
+             final_path = os.path.join(dirname, basename)
+             QMessageBox.information(self, "File Exists", f"Filename collision detected. Saving as {basename}")
+             
+        try:
+            composer_data = {
+                "school_name": self.school_data["school_name"],
+                "school_id": self.school_data["school_id"],
+                "school_year": self.school_data["school_year"],
+                "month": self.school_data["month"],
+                "grade": self.school_data["grade"],
+                "section": self.school_data["section"],
+                "dates": self.dates,
+                "holidays": self.holidays,
+                "students_male": self.students_male,
+                "students_female": self.students_female
+            }
+            
+            template = os.path.join(os.getcwd(), "sf2-template", "SF2Template.xlsx")
+            processor.save_to_excel(composer_data, template, final_path)
+            QMessageBox.information(self, "Success", f"File saved successfully to:\n{final_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
+
 def run_composer_gui():
     import sys
     from PyQt6.QtWidgets import QApplication
