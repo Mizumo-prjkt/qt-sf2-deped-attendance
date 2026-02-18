@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QDialog, 
     QMessageBox, QTableWidget, QTableWidgetItem, 
     QHeaderView, QRadioButton, QButtonGroup, QAbstractItemView,
-    QScrollArea, QFrame, QGridLayout
+    QScrollArea, QFrame, QGridLayout, QFileDialog
 )
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QColor, QBrush, QFont
@@ -623,9 +623,12 @@ class AttendanceMatrixWindow(QMainWindow):
 def run_composer_gui():
     import sys
     from PyQt6.QtWidgets import QApplication
-    # If app exists use it, else create
+    
+    # Ensure app exists
     app = QApplication.instance()
     if not app:
+        # This path is hit if run_composer_gui is called without an existing QApplication
+        # (e.g. if main.py didn't create it, which shouldn't happen with current main.py structure)
         app = QApplication(sys.argv)
     
     # Step 1: Info
@@ -640,18 +643,13 @@ def run_composer_gui():
             # Step 3: Matrix
             window = AttendanceMatrixWindow(school_data, student_dialog.students_male, student_dialog.students_female)
             window.show()
+            return window
             
-            # Main Loop
-            if not QApplication.instance().activeWindow(): 
-                 # If this is called from main.py, we might not want to exec_() if main loop runs?
-                 # But if called via "--composer-gui" argument, we need to block.
-                 sys.exit(app.exec())
-            else:
-                 # If we are just opening a window from existing app
-                 # We need to keep reference to window or it gets GC'd
-                 # Return it to caller
-                 return window
     return None
 
 if __name__ == "__main__":
-    run_composer_gui()
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    w = run_composer_gui()
+    if w:
+        sys.exit(app.exec())
