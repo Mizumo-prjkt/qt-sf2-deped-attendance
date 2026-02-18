@@ -13,10 +13,32 @@ def main():
     parser_args.add_argument("--parse-data", type=str, help="Path to file to parse", default=None)
     parser_args.add_argument("--terminal-only", action="store_true", help="Force terminal only mode")
     parser_args.add_argument("--autoyes", action="store_true", help="Skip confirmation prompts")
-    parser_args.add_argument("--composer", action="store_true", help="Launch TUI Composer Mode directly")
-    parser_args.add_argument("--composer-gui", action="store_true", help="Launch GUI Composer Mode directly")
+    parser_args.add_argument("--composer", action="store_true", help="Launch the TUI Composer directly")
+    parser_args.add_argument("--composer-gui", action="store_true", help="Launch the GUI Composer directly")
+    parser_args.add_argument("--json", type=str, help="Path to JSON file for automated processing")
+    parser_args.add_argument("--csv", type=str, help="Path to CSV file for automated processing")
     
     args = parser_args.parse_args()
+
+    # JSON Mode
+    if args.json:
+        try:
+            from lib import json_processor
+            json_processor.process_json_to_excel(args.json)
+            sys.exit(0)
+        except Exception as e:
+            print(f"Error processing JSON: {e}")
+            sys.exit(1)
+
+    # CSV Mode
+    if args.csv:
+        try:
+            from lib import csv_processor
+            csv_processor.process_csv_to_excel(args.csv)
+            sys.exit(0)
+        except Exception as e:
+            print(f"Error processing CSV: {e}")
+            sys.exit(1)
     
     # 2. Modes
     if args.composer:
