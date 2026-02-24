@@ -15,10 +15,17 @@ def main():
     parser_args.add_argument("--autoyes", action="store_true", help="Skip confirmation prompts")
     parser_args.add_argument("--composer", action="store_true", help="Launch the TUI Composer directly")
     parser_args.add_argument("--composer-gui", action="store_true", help="Launch the GUI Composer directly")
+    parser_args.add_argument("--json-lintcheck", type=str, help="Lint and check JSON file syntax and schema")
     parser_args.add_argument("--json", type=str, help="Path to JSON file for automated processing")
     parser_args.add_argument("--force-yes", action="store_true", help="Force automatic splitting of Excel sheets if student limits are exceeded")
     
     args = parser_args.parse_args()
+
+    # Lint Check
+    if args.json_lintcheck:
+        from lib import json_lintcheck
+        success = json_lintcheck.check_json(args.json_lintcheck)
+        sys.exit(0 if success else 1)
 
     # JSON Mode
     if args.json:

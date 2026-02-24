@@ -53,7 +53,7 @@ The standard DepEd SF2 Excel template ONLY accommodates:
 - Max 30 Female students
 
 ACTION REQUIRED:
-1. Double check: Ensure you haven't accidentally mislabeled a student's gender.
+1. Double check: Ensure you haven't accidentally mislabeled or misplaced a student's gender.
 2. If your class genuinely exceeds 30 males or 30 females, you can automatically
    split the students into multiple Excel spreadsheets by passing the 
    --force-yes flag. 
