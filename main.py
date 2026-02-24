@@ -16,7 +16,6 @@ def main():
     parser_args.add_argument("--composer", action="store_true", help="Launch the TUI Composer directly")
     parser_args.add_argument("--composer-gui", action="store_true", help="Launch the GUI Composer directly")
     parser_args.add_argument("--json", type=str, help="Path to JSON file for automated processing")
-    parser_args.add_argument("--csv", type=str, help="Path to CSV file for automated processing")
     
     args = parser_args.parse_args()
 
@@ -30,16 +29,6 @@ def main():
             print(f"Error processing JSON: {e}")
             sys.exit(1)
 
-    # CSV Mode
-    if args.csv:
-        try:
-            from lib import csv_processor
-            csv_processor.process_csv_to_excel(args.csv)
-            sys.exit(0)
-        except Exception as e:
-            print(f"Error processing CSV: {e}")
-            sys.exit(1)
-    
     # 2. Modes
     if args.composer:
         # Launch TUI Composer
