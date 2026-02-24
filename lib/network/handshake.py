@@ -1,7 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 import tempfile
 import json
+import zipfile
+import io
 from lib import json_processor
 from lib.network.envparse import logger
 
@@ -35,12 +37,32 @@ def handle_ping():
         # Clean up tmp file
         os.remove(tmp_path)
         
-        logger.info(f"Successfully generated {len(generated_files)} report(s).")
-        return jsonify({
-            "message": "Attendance reports successfully generated",
-            "files_created": len(generated_files),
-            "status": "success"
-        }), 200
+        logger.info(f"Successfully generated {len(generated_files)} report(s). Packaging into ZIP...")
+        
+        # Package files into a ZIP archive in memory
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for file_path in generated_files:
+                zf.write(file_path, os.path.basename(file_path))
+        
+        # Reset memory file pointer to the beginning
+        memory_file.seek(0)
+        
+        # Clean up generated files on the server to save space
+        for file_path in generated_files:
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+                
+        logger.info("Sending ZIP payload back to client.")
+        
+        return send_file(
+            memory_file,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name='Attendance_Reports.zip'
+        )
 
     except Exception as e:
         logger.error(f"Error processing JSON Handshake: {e}")

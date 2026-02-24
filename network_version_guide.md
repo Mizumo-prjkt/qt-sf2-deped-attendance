@@ -45,13 +45,10 @@ The endpoint expects a JSON payload matching the standard automated processing s
 **Important:** The network server natively implements `--force-yes` logic. If a payload contains more than 30 male or 30 female students, the server will **not** crash; it will automatically chunk the data and generate multiple spreadsheet files in the background (e.g., `_1.xlsx`, `_2.xlsx`).
 
 ### Expected Success Response (HTTP 200)
-```json
-{
-  "message": "Attendance reports successfully generated",
-  "files_created": 1,
-  "status": "success"
-}
-```
+
+Upon successful processing, the endpoint does **NOT** return a generic JSON message. Instead, it natively packages all generated `.xlsx` spreadsheets (including overflow chunked files) into a `.zip` archive and **streams the ZIP file directly back to the client** (`application/zip`). 
+
+You can receive and save this file programmatically in your JS client or test it in your terminal as shown below.
 
 ---
 
@@ -64,6 +61,7 @@ Here are commands you can run from your terminal to test the server connection a
 ```bash
 curl -X POST http://127.0.0.1:5000/ping \
 -H "Content-Type: application/json" \
+--output generated_reports.zip \
 -d '{
     "school_info": {
         "name": "Network API High",
@@ -91,6 +89,7 @@ If you have a JSON file (e.g., your `test.json` or `test_exceed.json`), you can 
 ```bash
 curl -X POST http://127.0.0.1:5000/ping \
 -H "Content-Type: application/json" \
+--output my_reports.zip \
 -d @test.json
 ```
 
@@ -100,6 +99,7 @@ If the Python app is hosted on IP `192.168.3.44`, send the request from an exter
 ```bash
 curl -X POST http://192.168.3.44:5000/ping \
 -H "Content-Type: application/json" \
+--output overflow_reports.zip \
 -d @test_exceed.json
 ```
 
