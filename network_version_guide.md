@@ -37,7 +37,7 @@ You can modify these settings via the TUI/GUI or by directly editing the `.env` 
 
 ## API Endpoint Specification
 
-**Endpoint:** `POST /ping`
+**Endpoint:** `POST /gen-sf2`
 **Content-Type:** `application/json`
 
 The endpoint expects a JSON payload matching the standard automated processing structure detailed in the `json_guide_structure.md`.  
@@ -59,7 +59,7 @@ Here are commands you can run from your terminal to test the server connection a
 ### 1. Basic Local Payload Test
 
 ```bash
-curl -X POST http://127.0.0.1:5000/ping \
+curl -X POST http://127.0.0.1:5000/gen-sf2 \
 -H "Content-Type: application/json" \
 --output generated_reports.zip \
 -d '{
@@ -87,7 +87,7 @@ curl -X POST http://127.0.0.1:5000/ping \
 If you have a JSON file (e.g., your `test.json` or `test_exceed.json`), you can send the entire file payload natively via cURL using the `@` symbol:
 
 ```bash
-curl -X POST http://127.0.0.1:5000/ping \
+curl -X POST http://127.0.0.1:5000/gen-sf2 \
 -H "Content-Type: application/json" \
 --output my_reports.zip \
 -d @test.json
@@ -97,7 +97,7 @@ curl -X POST http://127.0.0.1:5000/ping \
 If the Python app is hosted on IP `192.168.3.44`, send the request from an external application or remote terminal like so:
 
 ```bash
-curl -X POST http://192.168.3.44:5000/ping \
+curl -X POST http://192.168.3.44:5000/gen-sf2 \
 -H "Content-Type: application/json" \
 --output overflow_reports.zip \
 -d @test_exceed.json

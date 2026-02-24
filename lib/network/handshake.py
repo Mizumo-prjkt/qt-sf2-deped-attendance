@@ -9,7 +9,7 @@ from lib.network.envparse import logger
 
 app = Flask(__name__)
 
-@app.route('/ping', methods=['POST'])
+@app.route('/gen-sf2', methods=['POST'])
 def handle_ping():
     """
     Receives JSON data directly from the external JS Server and 
