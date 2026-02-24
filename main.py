@@ -16,17 +16,24 @@ def main():
     parser_args.add_argument("--composer", action="store_true", help="Launch the TUI Composer directly")
     parser_args.add_argument("--composer-gui", action="store_true", help="Launch the GUI Composer directly")
     parser_args.add_argument("--json", type=str, help="Path to JSON file for automated processing")
+    parser_args.add_argument("--force-yes", action="store_true", help="Force automatic splitting of Excel sheets if student limits are exceeded")
     
     args = parser_args.parse_args()
 
     # JSON Mode
     if args.json:
         try:
+            from lib import guardrails
+            guardrails.validate_student_count(args.json, force_split=args.force_yes)
+            
             from lib import json_processor
-            json_processor.process_json_to_excel(args.json)
+            json_processor.process_json_to_excel(args.json, force_split=args.force_yes)
             sys.exit(0)
         except Exception as e:
-            print(f"Error processing JSON: {e}")
+            if type(e).__name__ == "StudentLimitExceeded":
+                print(e)
+            else:
+                print(f"Error processing JSON: {e}")
             sys.exit(1)
 
     # 2. Modes

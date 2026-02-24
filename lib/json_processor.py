@@ -24,7 +24,7 @@ def load_json(file_path):
             
     return data
 
-def process_json_to_excel(json_path, output_path=None):
+def process_json_to_excel(json_path, output_path=None, force_split=False):
     """
     Reads JSON, processes data, and saves to Excel using processor.save_to_excel.
     """
@@ -91,28 +91,60 @@ def process_json_to_excel(json_path, output_path=None):
     # Sort
     students_male.sort(key=lambda x: x["name"])
     students_female.sort(key=lambda x: x["name"])
-    
-    composer_data["students_male"] = students_male
-    composer_data["students_female"] = students_female
-    
-    # Output Path
-    if not output_path:
-        # Generate default
-        default_name = f"Attendance_{composer_data['month']}_{composer_data['section']}.xlsx"
-        default_name = default_name.replace(" ", "_")
-        output_path = os.path.join(os.path.dirname(json_path), default_name)
-        
-    # Check duplicate
-    if os.path.exists(output_path):
-         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-         base, ext = os.path.splitext(output_path)
-         output_path = f"{base}_{timestamp}{ext}"
 
-    # Template
-    # Assuming template is in current working directory/sf2-template/
-    template = os.path.join(os.getcwd(), "sf2-template", "SF2Template.xlsx")
+    # Splitting Logic
+    def chunk_list(lst, n):
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
+    male_chunks = list(chunk_list(students_male, 30)) if students_male else [[]]
+    female_chunks = list(chunk_list(students_female, 30)) if students_female else [[]]
+
+    num_parts = max(len(male_chunks), len(female_chunks))
     
-    print(f"Generating report for {composer_data['school_name']}...")
-    processor.save_to_excel(composer_data, template, output_path)
-    print(f"Successfully saved to: {output_path}")
-    return output_path
+    # If not force_split but somehow limits were high (should be caught by guardrails)
+    if not force_split and num_parts > 1:
+        # Fallback security if guardrails bypassed
+        male_chunks = [students_male[:30]]
+        female_chunks = [students_female[:30]]
+        num_parts = 1
+
+    generated_paths = []
+    
+    for i in range(num_parts):
+        part_males = male_chunks[i] if i < len(male_chunks) else []
+        part_females = female_chunks[i] if i < len(female_chunks) else []
+        
+        part_data = composer_data.copy()
+        part_data["students_male"] = part_males
+        part_data["students_female"] = part_females
+        
+        # Determine output path for this part
+        current_output_path = output_path
+        if not current_output_path:
+            # Generate default
+            suffix = f"_pt{i+1}" if num_parts > 1 else ""
+            default_name = f"Attendance_{composer_data['month']}_{composer_data['section']}{suffix}.xlsx"
+            default_name = default_name.replace(" ", "_")
+            current_output_path = os.path.join(os.path.dirname(json_path), default_name)
+        else:
+            if num_parts > 1:
+                base, ext = os.path.splitext(current_output_path)
+                current_output_path = f"{base}_pt{i+1}{ext}"
+                
+        # Check duplicate
+        if os.path.exists(current_output_path):
+             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+             base, ext = os.path.splitext(current_output_path)
+             current_output_path = f"{base}_{timestamp}{ext}"
+
+        # Template
+        # Assuming template is in current working directory/sf2-template/
+        template = os.path.join(os.getcwd(), "sf2-template", "SF2Template.xlsx")
+        
+        print(f"Generating report part {i+1}/{num_parts} for {composer_data['school_name']}...")
+        processor.save_to_excel(part_data, template, current_output_path)
+        print(f"Successfully saved to: {current_output_path}")
+        generated_paths.append(current_output_path)
+        
+    return generated_paths
