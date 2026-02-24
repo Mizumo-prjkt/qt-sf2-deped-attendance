@@ -129,9 +129,12 @@ def handle_terminal_mode(args):
                 if result == "COMPOSER":
                     from lib import composer_tui
                     composer_tui.run_composer()
-                    # After composer, maybe loop back? Or exit?
-                    # Usually exit or return to main menu.
-                    # Let's loop back to main menu for now.
+                    continue
+                elif result == "SERVER":
+                    from lib.network import tui as net_tui
+                    from lib.network import envparse
+                    config = envparse.load_or_create_env()
+                    net_tui.launch_tui(config)
                     continue
                 else:
                     break # Normal exit

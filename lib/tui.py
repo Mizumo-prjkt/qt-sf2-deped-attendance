@@ -169,6 +169,7 @@ class StartupScreen(Screen):
             Label("Welcome to SF2 Attendance Tool", classes="title"),
             Button("Browse Existing File", id="btn_browse", variant="primary"),
             Button("Compose New Report", id="btn_compose", variant="success"),
+            Button("Network Server", id="btn_server", variant="warning"),
             Button("Quit", id="btn_quit", variant="error"),
             classes="startup-menu"
         )
@@ -178,24 +179,9 @@ class StartupScreen(Screen):
         if event.button.id == "btn_browse":
             self.app.push_screen("files")
         elif event.button.id == "btn_compose":
-            # Launch Composer
-            # Ideally we switch apps or screen. Switching Apps is hard.
-            # We will run composer as a subprocess or separate invoke from main?
-            # Or just import and run? Textual apps inside apps is tricky.
-            # Let's signal main to run composer?
-            # Or better, just exit with a special code?
-            # ACTUALLY: We can just import the Composer Screen logic INTO this app?
-            # But the structure is different.
-            
-            # Simple solution: Exit this app and let handle_terminal_mode launch composer.
-            # But handle_terminal_mode is in main.
-            
-            # Alternative: Just run the composer function. 
-            # But Textual app.run() blocks.
-            
-            # Let's try exit with result "COMPOSER"
             self.app.exit(result="COMPOSER")
-             
+        elif event.button.id == "btn_server":
+            self.app.exit(result="SERVER")
         elif event.button.id == "btn_quit":
             self.app.exit()
 

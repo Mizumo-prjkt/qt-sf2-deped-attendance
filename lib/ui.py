@@ -25,11 +25,15 @@ class MainWindow(QMainWindow):
         
         self.btn_compose = QPushButton("Compose Report")
         self.btn_compose.clicked.connect(self.launch_composer)
+
+        self.btn_server = QPushButton("Network Server")
+        self.btn_server.clicked.connect(self.launch_server_gui)
         
         self.lbl_status = QLabel("Ready")
         
         top_layout.addWidget(self.btn_load)
         top_layout.addWidget(self.btn_compose)
+        top_layout.addWidget(self.btn_server)
         top_layout.addWidget(self.lbl_status)
         top_layout.addStretch()
         
@@ -54,6 +58,15 @@ class MainWindow(QMainWindow):
             self.composer_window = composer_gui.run_composer_gui()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to launch composer: {e}")
+
+    def launch_server_gui(self):
+        try:
+            from lib.network import ui, envparse
+            config = envparse.load_or_create_env()
+            self.server_window = ui.ServerGUI(config)
+            self.server_window.show()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to launch Network Server: {e}")
 
     def process_file(self, filepath):
         try:

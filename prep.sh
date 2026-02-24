@@ -38,6 +38,8 @@ else
     echo "textual-dev" >> requirements.txt
     echo "simple-term-menu" >> requirements.txt
     echo "Pillow" >> requirements.txt
+    echo "Flask" >> requirements.txt
+    echo "python-dotenv" >> requirements.txt
     pip install -r requirements.txt
 fi
 

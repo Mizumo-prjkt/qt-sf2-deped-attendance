@@ -9,3 +9,5 @@ lib/__pycache__/parser.cpython-313.pyc
 lib/__pycache__
 *.csv
 *.xlsx
+logs
+lib/network/__pycache__
