@@ -19,6 +19,11 @@ def main():
     parser_args.add_argument("--json", type=str, help="Path to JSON file for automated processing")
     parser_args.add_argument("--force-yes", action="store_true", help="Force automatic splitting of Excel sheets if student limits are exceeded")
     
+    # Export and Bundle Flags
+    parser_args.add_argument("--pdf", action="store_true", help="Export as PDF using LibreOffice headless")
+    parser_args.add_argument("--xlsx", action="store_true", help="Export as XLSX (Excel)")
+    parser_args.add_argument("--bundle-to-archive", nargs='?', const='zip', choices=['zip', 'tar', 'tar.xz', '7z'], help="Bundle the generated files into an archive")
+    
     args = parser_args.parse_args()
 
     # Lint Check
@@ -34,7 +39,43 @@ def main():
             guardrails.validate_student_count(args.json, force_split=args.force_yes)
             
             from lib import json_processor
-            json_processor.process_json_to_excel(args.json, force_split=args.force_yes)
+            excel_files = json_processor.process_json_to_excel(args.json, force_split=args.force_yes)
+            
+            # Handle Export Flags
+            export_xlsx = args.xlsx
+            export_pdf = args.pdf
+            
+            # Default to xlsx if neither flag is provided
+            if not export_xlsx and not export_pdf:
+                export_xlsx = True
+                
+            # If both are requested, ensure bundle is active
+            if export_xlsx and export_pdf:
+                if args.bundle_to_archive is None:
+                    args.bundle_to_archive = 'zip'
+                    
+            output_files = []
+            
+            if export_pdf:
+                from lib import pdf_processor
+                pdf_files = pdf_processor.convert_xlsx_to_pdf(excel_files)
+                output_files.extend(pdf_files)
+                
+            if export_xlsx:
+                output_files.extend(excel_files)
+            else:
+                # Cleanup the generated Excel files if only PDF was requested
+                for f in excel_files:
+                    if os.path.exists(f):
+                        try:
+                            os.remove(f)
+                        except OSError as e:
+                            print(f"Warning: Could not remove temporary XLSX file {f}: {e}")
+                            
+            if args.bundle_to_archive and output_files:
+                from lib import archive_bundle
+                archive_bundle.create_archive(output_files, archive_format=args.bundle_to_archive)
+            
             sys.exit(0)
         except Exception as e:
             if type(e).__name__ == "StudentLimitExceeded":
