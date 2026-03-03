@@ -1,11 +1,16 @@
 import subprocess
 import os
+import shutil
 
 def convert_xlsx_to_pdf(xlsx_paths):
     """
     Converts a list of .xlsx file paths to .pdf using LibreOffice headless.
     Returns a list of generated .pdf file paths.
     """
+    if not shutil.which('libreoffice'):
+        print("Error: 'libreoffice' is not installed or not in PATH. Aborting PDF creation.")
+        return []
+        
     pdf_paths = []
     for xlsx_path in xlsx_paths:
         if not os.path.exists(xlsx_path):
