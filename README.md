@@ -16,6 +16,7 @@ A comprehensive application for managing, composing, and exporting DepEd Philipp
 ## Requirements
 
 - Python 3.10+
+- LibreOffice (required for PDF export functionality)
 - Dependencies listed in `requirements.txt`:
   - `PyQt6` (for the GUI)
   - `openpyxl` (for Excel processing)
@@ -79,6 +80,17 @@ python3 main.py --terminal-only
 Directly process a JSON file into an Excel SF2 report without launching an interactive interface:
 ```bash
 python3 main.py --json path/to/data.json
+```
+
+**Export and Archiving Options:**
+When using automated JSON processing, you can control the output formats and optionally bundle them into an archive:
+- `--xlsx`: Export the data as an Excel file (default behavior).
+- `--pdf`: Export the data as a PDF file using LibreOffice headless mode.
+- `--bundle-to-archive [format]`: Compress the generated files into an archive. Supported formats are `zip` (default), `tar`, `tar.xz`, and `7z`. *Note: This flag is required if both `--pdf` and `--xlsx` are specified simultaneously.*
+
+Example - Export as PDF and ZIP archive:
+```bash
+python3 main.py --json path/to/data.json --pdf --bundle-to-archive zip
 ```
 
 ---
